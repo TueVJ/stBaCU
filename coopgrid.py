@@ -408,6 +408,19 @@ def get_policy_4_storage(ts, eta_in = 1., eta_out = 1., storage_capacity = NaN):
     used_storage = storage_filling_with_offset.max() - storage_filling_with_offset.min()
     return ts - storing - extracting, used_storage
 
+###
+#   DESC:
+#   Given an array of data, returns an array of the same
+#   length, containing the original data up until the
+#   index where cumsum(array)>number. Array(index) is
+#   replaced by the remainder af subtraction from number,
+#   and trailing zeros are inserted.
+#   USAGE:
+#   Given a storage level of number, and an array of 
+#   power consumption data, return an array of power
+#   usage when running completely on the storage.
+###
+burn_off
 def burn_off(array, number):
     """array and number must be positive and array.sum() >= number"""
     if array.sum() > number:
