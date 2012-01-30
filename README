@@ -1,0 +1,6 @@
+Attempting to clean up Morten's code dealing with storage simulations.
+
+Project files:
+coopmain.py : Master init file.
+coopplot.py : Contains all plotting functions.
+coopgrid.py : Original code.
