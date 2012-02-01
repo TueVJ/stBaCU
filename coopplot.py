@@ -1,3 +1,16 @@
+from pylab import NaN
+import numpy
+from array import array
+#from scipy.optimize import *
+#from scipy.integrate import *
+#from scipy.stats.mstats import mquantiles
+from mpl_toolkits.mplot3d import axes3d
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+import countries
+import constant
+from copy import deepcopy
+
 def plot_slow_storage_vs_balance_graph(gamma, fast_eta_in = .9, fast_eta_out = .9, slow_eta_in = .6, slow_eta_out = .6, fast_storage_capacity = 6, slow_storage_capacity_array = array([0., 5., 10., 50., 100., 200., 500., 1000.]), cut_time = 24):
     used_storages = empty_like(slow_storage_capacity_array)
     optimal_alphas = empty_like(slow_storage_capacity_array)

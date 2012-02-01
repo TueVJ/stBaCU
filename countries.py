@@ -1,4 +1,4 @@
-from pylab import *
+from pylab import loadtxt
 EU = loadtxt("/home/mgr/Dropbox/Work/Data/EU/TS_Europe.txt", skiprows=1)
 EUdetrended=loadtxt("/home/mgr/Dropbox/Work/Data/EU-detrended/TS_Europe.txt", skiprows=1)
 Norway_detrended = loadtxt("/home/mgr/Dropbox/Work/Data/EU-detrended/TS_N.txt", skiprows = 1)

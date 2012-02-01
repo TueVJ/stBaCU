@@ -1,11 +1,8 @@
-from pylab import *
+from pylab import NaN
 import numpy
 from scipy.optimize import *
 from scipy.integrate import *
 from scipy.stats.mstats import mquantiles
-from mpl_toolkits.mplot3d import axes3d
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
 import countries
 import constant
 from copy import deepcopy
