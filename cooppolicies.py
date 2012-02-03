@@ -1,12 +1,13 @@
 from pylab import NaN
+from numpy import array
 import numpy
 from scipy.optimize import *
 from scipy.integrate import *
 from scipy.stats.mstats import mquantiles
-import countries
+#import countries
 import constant
 from copy import deepcopy
-
+from coopgrid import *
 
 
 def get_policy_1_storage(ts, eta_in, eta_out, storage_capacity = NaN):
@@ -25,8 +26,10 @@ def get_policy_5_storage(ts, eta_in, eta_out, storage_capacity):
 
 #    plot(storage_ts + remainder - ts - 2)
     return storage_ts + remainder, used_storage
-
-def get_policy_2_storage(ts, eta_in = 1., eta_out = 1., storage_capacity = NaN):
+###
+#	@param: storage_capacity: Maximum storage capacity in units of average consumption per hour.
+###
+def get_policy_2_storage(ts, eta_in = 1., eta_out = 1., storage_capacity = NaN,return_storage_filling_time_series=False):
     """Policy 2"""
     if ts.min() >= -1e-10 or ts.max() <= 1e-10:
         return ts, 0
@@ -46,6 +49,8 @@ def get_policy_2_storage(ts, eta_in = 1., eta_out = 1., storage_capacity = NaN):
     extracting = zeros_like(ts)
     storing = zeros_like(ts)
 
+	## If start and end have the same sign, we need to ensure distribution
+	## across the cyclic boundaries.
     end_to_start_slice = concatenate((ts[indices[-1] + 1:],ts[:indices[0] + 1]))
     if storage_usage_ts[0] < 0:
         end_to_start_extracting = -burn_off(-end_to_start_slice, -storage_usage_ts[0])
@@ -55,7 +60,7 @@ def get_policy_2_storage(ts, eta_in = 1., eta_out = 1., storage_capacity = NaN):
         end_to_start_storing = burn_off(pos(end_to_start_slice), pos(storage_usage_ts[0]))
         storing[indices[-1] + 1:] = end_to_start_storing[:len(extracting[indices[-1] + 1:])]
         storing[:indices[0] + 1] = end_to_start_storing[len(extracting[indices[-1] + 1:]):]
-    
+    ## Distribute across all other intervals.
     for x in arange(len(indices)-1) + 1:
         current_slice = ts[indices[x - 1] + 1: indices[x] + 1]
         #print x
@@ -72,9 +77,14 @@ def get_policy_2_storage(ts, eta_in = 1., eta_out = 1., storage_capacity = NaN):
     #plot(ts - storing - extracting+ 1)
 #    figure()
     storage_filling_with_offset = eta_in * storing.cumsum() + extracting.cumsum() / eta_out
+    storage_filling_without_offset = storage_filling_with_offset - storage_filling_with_offset.min()
     used_storage = storage_filling_with_offset.max() - storage_filling_with_offset.min()
     #plot(storage_filling_with_offset)
-    return ts - storing - extracting, used_storage
+    if return_storage_filling_time_series:
+	    return ts - storing - extracting, used_storage, storage_filling_without_offset
+    else:
+        return ts - storing - extracting, used_storage
+		
 
 
 def get_policy_4_storage(ts, eta_in = 1., eta_out = 1., storage_capacity = NaN):

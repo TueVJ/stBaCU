@@ -1,4 +1,4 @@
-from pylab import NaN
+from pylab import *
 import numpy
 from scipy.optimize import *
 from scipy.integrate import *
@@ -149,6 +149,11 @@ def find_height(array, constant):
     else:
         return brenth(funct, -max(array)*1000, max(array)*1000)
 
+###
+#	@return: indices: 	indices in ts where ts changes sign.
+#			integrals:	The integral of ts in the same-sign intervals.
+###
+
 def get_indices_and_integrals(ts):
     if min(ts) >= 0:
         print "INTET NEGATIVT!"
@@ -187,6 +192,14 @@ def get_indices_and_integrals(ts):
         component_integrals[1:-1] = diff(component_integral)
         component_integrals[length] = ts.sum() - component_integral[length - 1]
         return concatenate([indices,[len(ts) - 1]]), component_integrals
+
+###
+#	@param:	storage_capacity: indicates maximum storage capacity (possibly NaN)
+#			start_at_top: BOOL indicating whether to start with a full storage or not.
+#	@return: storage_level: The amount which the storage should start from
+#			in order to be neutral, or cyclic.
+#			used_storage:	LEGACY: A first guess on how much storage capacity is used.
+###
 
 def get_storage_start(integrals, eta_in, eta_out, storage_capacity, start_at_top):
     in_out_data = eta_in * integrals * (integrals > 0) + integrals * (integrals < 0) / eta_out
@@ -236,7 +249,10 @@ def get_storage_start(integrals, eta_in, eta_out, storage_capacity, start_at_top
 
 #    print storage_level, used_storage
     return storage_level, used_storage
-        
+
+###
+#	@param: negative_numbers: BOOL indicating whether ts bottoms out.
+###
 def get_storage_usage_ts(integrals, storage_start, eta_in, eta_out, storage_capacity, negative_numbers):
 #    print negative_numbers
 #    print storage_start
@@ -247,7 +263,7 @@ def get_storage_usage_ts(integrals, storage_start, eta_in, eta_out, storage_capa
     else:
         full_storage = storage_capacity
         empty_storage = 0.
-    suts = empty_like(integrals)
+    suts = empty_like(integrals) #Storage usage time series
     old_storage_level = storage_start
     if size(in_out_data) == 1:
         in_out_data = array([in_out_data])

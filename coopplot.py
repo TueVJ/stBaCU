@@ -1,6 +1,6 @@
 from pylab import NaN
+from numpy import array
 import numpy
-from array import array
 #from scipy.optimize import *
 #from scipy.integrate import *
 #from scipy.stats.mstats import mquantiles
@@ -79,21 +79,21 @@ def plot_balances_storages_bases(countrydata):
     storages = get_normalized_storages(countrydata)
     bases = get_base_balancings(countrydata)
     names = get_country_names(countrydata)
-
+	
     f = open("plot_balances.txt", 'w')
     print >>f, balancings, storages, bases, names
     f.close()
     
     ind = arange(N)
     width = 0.27
-
+	
     subplot(111)
     rects1 = bar(ind, balancings, width, color = 'r')
     rects2 = bar(ind + width, storages, width, color = 'g')
     rects3 = bar(ind + 2 * width, bases, width, color = 'b')
-
+	
     xticks(ind + 1.5*width, names, rotation = 90)
-
+	
     legend((rects1[0], rects2[0], rects3[0]), ("Balancings", "Storages", "Base balancings"), loc = 2)
 
 def plot_alphas(cd):
