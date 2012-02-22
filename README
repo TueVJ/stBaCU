@@ -1,6 +1,14 @@
 Attempting to clean up Morten's code dealing with storage simulations.
 
+Initialize init.py in order to get Morten's functions available:
+
 Project files:
-coopmain.py : Master init file.
-coopplot.py : Contains all plotting functions.
-coopgrid.py : Original code.
+init.py : Master init file.
+mplot.py : Contains all plotting functions. (Morten)
+mfunc.py : Helper functions. (Morten)
+mpolicies.py : Functions for finding storage timeseries and levels. (Morten)
+tfunc.py : Helper functions (Used with tplot.py). (Tue)
+tplot.py : Plotting functions. (Tue)
+countries.py : Initializes contries and contains data on which country to use for timeseries.
+
+NOTE: European countries are currently commented out and only E_detrended is loaded to allow for faster loading. To re-enable individual countries, remove the multi-line comment """...""" from countries.py
