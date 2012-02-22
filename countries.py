@@ -1,7 +1,7 @@
 from pylab import loadtxt
 EU = loadtxt("/home/mgr/Dropbox/Work/Data/EU/TS_Europe.txt", skiprows=1)
 EUdetrended=loadtxt("/home/mgr/Dropbox/Work/Data/EU-detrended/TS_Europe.txt", skiprows=1)
-Norway_detrended = loadtxt("/home/mgr/Dropbox/Work/Data/EU-detrended/TS_N.txt", skiprows = 1)
+"""Norway_detrended = loadtxt("/home/mgr/Dropbox/Work/Data/EU-detrended/TS_N.txt", skiprows = 1)
 Sweden_detrended = loadtxt("/home/mgr/Dropbox/Work/Data/EU-detrended/TS_S.txt", skiprows = 1)
 Finland_detrended = loadtxt("/home/mgr/Dropbox/Work/Data/EU-detrended/TS_FIN.txt", skiprows = 1)
 Denmark_detrended = loadtxt("/home/mgr/Dropbox/Work/Data/EU-detrended/TS_DK.txt", skiprows = 1)
@@ -56,6 +56,6 @@ Countries = (("Norway", Norway_detrended),
              ("Bulgaria", Bulgaria_detrended),
              ("Greece", Greece_detrended),
              ("Europe 27", EUdetrended))
-
+"""
 Region = EUdetrended
 
