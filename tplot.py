@@ -13,6 +13,14 @@ import matplotlib.pyplot as plt
 #plt.plot(reduced_mismatch)
 #print used_storage
 #print total_storage
+def plot_gamma_1_storage():
+	plt.figure()
+	ts=get_mismatch(1.0)
+	dummy,storage_capacity,storage_level=get_policy_2_storage(ts,return_storage_filling_time_series=True)
+	plt.plot(storage_level)
+	plt.interactive(1)
+	plt.show()
+
 def plot_storage_with_smoothing():
 	N=101
 	storage_capacities_raw=empty(N)
@@ -52,14 +60,108 @@ def plot_storage_with_smoothing():
 	interactive(1)
 	show()
 
+def plot_EVT_weather_Pickands():
+	plt.figure()
+	gammas=np.linspace(0.5,0.9,5)
+	dict={}
+	for gamma in gammas:
+		maxes=get_maximal_storages(gamma)
+		EVI,ks=gamma_estimator_Pickands(maxes,return_k=True)
+		dict[gamma]=(ks[:],EVI[:])
+	for gamma in gammas:
+		maxk=max(dict[gamma][0])*1.0
+		relks=[k/maxk for k in dict[gamma][0]]
+		plt.plot(relks,dict[gamma][1],label=str(gamma)+", "+str(maxk))
+	plt.gca().axhline(0,linestyle=":")
+	plt.gca().set_xlabel("k/kmax")
+	plt.gca().set_ylabel("$\hat{\gamma}$")
+	plt.gca().set_title("Pickands")
+	plt.gca().set_ylim((-1,2))
+	plt.gca().set_xlim((0,1))
+	plt.legend(loc="upper right")
+	plt.savefig("weather_pickands_sub.png")
+	plt.interactive(1)
+	plt.show()
+
+def plot_EVT_weather_Pickands_w_6h():
+	plt.figure()
+	gammas=np.linspace(0.9,0.94,5)
+	dict={}
+	for gamma in gammas:
+		maxes=get_maximal_storages_with_extra_storage(gamma)
+		EVI,ks=gamma_estimator_Pickands(maxes,return_k=True)
+		dict[gamma]=(ks[:],EVI[:])
+	for gamma in gammas:
+		maxk=max(dict[gamma][0])*1.0
+		relks=[k/maxk for k in dict[gamma][0]]
+		plt.plot(relks,dict[gamma][1],label=str(gamma)+", "+str(maxk))
+	plt.gca().axhline(0,linestyle=":")
+	plt.gca().set_xlabel("k/kmax")
+	plt.gca().set_ylabel("$\hat{\gamma}$")
+	plt.gca().set_title("Pickands")
+	plt.gca().set_ylim((-1,2))
+	plt.gca().set_xlim((0,1))
+	plt.legend(loc="upper right")
+	plt.savefig("weather_pickands_sub_6h.png")
+	plt.interactive(1)
+	plt.show()
+
+def plot_EVT_weather_adHill(exclude=10):
+	plt.figure()
+	gammas=np.linspace(0.5,0.9,5)
+	dict={}
+	for gamma in gammas:
+		maxes=get_maximal_storages(gamma)
+		EVI,ks=gamma_estimator_adapted_Hill(maxes,return_k=True,excluder=exclude)
+		dict[gamma]=(ks[:],EVI[:])
+	for gamma in gammas:
+		maxk=max(dict[gamma][0])*1.0
+		relks=[k/maxk for k in dict[gamma][0]]
+		plt.plot(relks,dict[gamma][1],label=str(gamma)+", "+str(maxk))
+	plt.gca().axhline(0,linestyle=":")
+	plt.gca().set_xlabel("k/kmax")
+	plt.gca().set_ylabel("$\hat{\gamma}$")
+	plt.gca().set_title("Adapted Hill")
+	plt.gca().set_ylim((-1,2))
+	plt.gca().set_xlim((0.001,1))
+	plt.xscale("log")
+	plt.legend(loc="upper left")
+	plt.savefig("weather_adHill_sub.png")
+	plt.interactive(1)
+	plt.show()
+
+def plot_EVT_weather_adHill_w_6h(exclude=10):
+	plt.figure()
+	gammas=np.linspace(0.9,0.94,5)
+	dict={}
+	for gamma in gammas:
+		maxes=get_maximal_storages_with_extra_storage(gamma)
+		EVI,ks=gamma_estimator_adapted_Hill(maxes,return_k=True,excluder=exclude)
+		dict[gamma]=(ks[:],EVI[:])
+	for gamma in gammas:
+		maxk=max(dict[gamma][0])*1.0
+		relks=[k/maxk for k in dict[gamma][0]]
+		plt.plot(relks,dict[gamma][1],label=str(gamma)+", "+str(maxk))
+	plt.gca().axhline(0,linestyle=":")
+	plt.gca().set_xlabel("k/kmax")
+	plt.gca().set_ylabel("$\hat{\gamma}$")
+	plt.gca().set_title("Adapted Hill")
+	plt.gca().set_ylim((-1,2))
+	plt.gca().set_xlim((0.001,1))
+	plt.xscale("log")
+	plt.legend(loc="upper left")
+	plt.savefig("weather_adHill_sub_6h.png")
+	plt.interactive(1)
+	plt.show()
+
 def plot_EVT_weather():
 	close("all")
 	maxes=get_maximal_storages(0.7)
 	gammaP07,Pks07=gamma_estimator_Pickands(maxes,return_k=True)
-	gammaH07,Hks07=gamma_estimator_adapted_Hill(maxes,return_k=True)
+	gammaH07,Hks07=gamma_estimator_adapted_Hill(maxes,return_k=True,excluder=10)
 	maxes=get_maximal_storages(0.8)
 	gammaP08,Pks08=gamma_estimator_Pickands(maxes,return_k=True)
-	gammaH08,Hks08=gamma_estimator_adapted_Hill(maxes,return_k=True)
+	gammaH08,Hks08=gamma_estimator_adapted_Hill(maxes,return_k=True,excluder=10)
 	plt.plot(Pks07,gammaP07,label="Pickands, gamma=0.7",)
 	plt.plot(Hks07,gammaH07,label="Adapted Hill, gamma=0.7")
 	plt.plot(Pks08,gammaP08,label="Pickands, gamma=0.8")

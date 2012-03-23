@@ -58,7 +58,7 @@ def get_maximal_storages(gamma=0.7,a=0.6):
 	ts=get_mismatch(gamma,a)
 	dummy,storage_capacity,storage_level=get_policy_2_storage(ts,return_storage_filling_time_series=True)
 	if gamma>1:
-		storage_level=storage_capacity-storage_level
+		storage_level=storage_level-storage_capacity
 	maxes,ind_max=get_max_of_nonzero(storage_level,return_indices=True)
 	return maxes
 ##
@@ -71,7 +71,8 @@ def get_maximal_storages_with_extra_storage(gamma=0.7,storage_size=6,tolerance=1
 	ts6h,dummy=get_policy_2_storage(ts,storage_capacity=storage_size)
 	dummy,storage_capacity,storage_level=get_policy_2_storage(ts6h,return_storage_filling_time_series=True)
 	if gamma>1:
-		storage_level=storage_capacity-storage_level
+		storage_level=storage_level-storage_capacity
+	plot(storage_level)
 	maxes,ind_max=get_max_of_nonzero(storage_level,return_indices=True,mintolerance=tolerance)
 	return maxes
 
@@ -83,6 +84,12 @@ def gamma_estimator_Pickands(X,return_k=False,excluder=0):
 	X.sort() #Sorts list by smallest first
 	X=X[:len(X)-excluder]
 	N=len(X)/4
+	if N<2+excluder: #Need at least two k values to produce proper output.
+		print "Insufficient values in Pickands estimator"
+		if return_k:
+			return [0,0],[1,2] 
+		else:
+			return [0,0]
 	ks=range(1+excluder,N)
 	est=[]
 	log2=np.log(2)
@@ -119,6 +126,12 @@ def gamma_estimator_Hill(X,return_k=False,excluder=0):
 def gamma_estimator_adapted_Hill(X,return_k=False,excluder=0):
 	X.sort()
 	X=X[::-1] #Sorts list by largest first
+	if len(X)<=2+excluder:
+		print "Insufficient values in adapted Hill estimator"
+		if return_k:
+			return [0,0],[1,2] 
+		else:
+			return [0,0]
 	X=X[excluder:]
 	N=len(X)-1
 	Us=np.zeros(N)
