@@ -4,7 +4,9 @@ from mpolicies import *
 from tfunc import *
 #import countries
 import matplotlib.pyplot as plt
-
+import copy
+import pywt
+import numpy as np
 
 #ts=get_mismatch();
 #reduced_mismatch,used_storage=get_policy_2_storage(ts,storage_capacity=6);
@@ -218,5 +220,28 @@ def plot_smoothed_singularity():
 	plt.gca().set_ylim(bottom=1)
 	yscale("log")
 	legend(loc="upper right")
+	interactive(1)
+	show()
+
+def plot_wavelets_smoothed_capacities():
+	gammas=np.linspace(0.5,1,11)
+	results={}
+	for gamma in gammas:
+		ts = get_mismatch(gamma)
+		coeffs=pywt.wavedec(ts,'db2')
+		steps=len(coeffs)-np.arange(len(coeffs)-3)-3
+		maxes={}
+		for step in steps:
+			print str(step) + ', '+str(gamma)
+			coeffs[step]*=0
+			ts=pywt.waverec(coeffs,'db2')
+			dummy,storage_capacity=get_policy_2_storage(ts)
+			maxes[step]=storage_capacity
+		results[gamma]=copy.deepcopy(maxes)
+	
+	for gamma in gammas:
+		plot(results[gamma].keys(),results[gamma].values(),label=str(round(gamma,2)))
+	yscale('log')
+	#legend(loc='lower right')
 	interactive(1)
 	show()

@@ -1,6 +1,7 @@
 import numpy
 from mfunc import *
 from mpolicies import *
+import pywt
 ###
 #	Returns a list of tuples (begin,end) with the beginning
 #	and end indices of intervals of length > 1 where the
@@ -145,3 +146,61 @@ def gamma_estimator_adapted_Hill(X,return_k=False,excluder=0):
 	else:
 		return est
 
+
+def wavelet_smoother(ts,long_cut=np.inf,short_cut=0,wavelet='db4',normalize=True):
+	''' Smooth ts using the wavelet specified.
+
+		@long_cut is the longest wavelength to keep.
+		@short_cut is the shortest wavelength to keep.
+		@normalize will normalize positive and negative
+		contributions after smoothing.
+	'''
+	smooth_long=smooth_short=True
+	if long_cut >= len(ts):
+		smooth_long=False
+	if short_cut < 1:
+		smooth_short=False
+	
+	# No smoothing needed
+	if smooth_long == False and smooth_short == False:
+		return ts
+	
+	# Oversmoothed; Output 0.
+	if long_cut <= short_cut or short_cut >= len(ts):
+		return ts*0
+	if normalize==True:
+		avg=np.average(ts)
+		ts-=avg
+	coeffs=pywt.wavedec(ts,wavelet)
+	
+	#indices of short and long wavelengths.
+	if smooth_short==True:
+		si=np.log2((1.0*len(ts))/short_cut)
+		if si >= len(coeffs):
+			smooth_short=False
+	if smooth_long == True:
+		li=np.log2((1.0*len(ts))/long_cut)
+	#No information on short wavelength
+
+	if smooth_long==True:
+		intpart=int(li)
+		fracpart=li-intpart
+		for i in range(intpart):
+			coeffs[i]*=0
+		coeffs[intpart]*=fracpart
+
+	if smooth_short==True:
+		intpart=int(si)
+		fracpart=si-intpart
+		for i in range(intpart+1,len(coeffs)):
+			coeffs[i]*=0
+		coeffs[intpart]*=fracpart
+	
+	smoothed=pywt.waverec(coeffs,wavelet)
+
+	# Normalization step, ensures the positive and negative
+	# parts of smoothed match those of ts. "Preserves gamma"
+	if normalize==True:
+		smoothed+=avg
+		ts+=avg
+	return smoothed
