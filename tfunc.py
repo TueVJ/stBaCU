@@ -2,6 +2,7 @@ import numpy
 from mfunc import *
 from mpolicies import *
 import pywt
+import pp
 ###
 #	Returns a list of tuples (begin,end) with the beginning
 #	and end indices of intervals of length > 1 where the
@@ -147,7 +148,7 @@ def gamma_estimator_adapted_Hill(X,return_k=False,excluder=0):
 		return est
 
 
-def wavelet_smoother(ts,long_cut=np.inf,short_cut=0,wavelet='db4',normalize=True):
+def wavelet_smoother(ts,long_cut=np.inf,short_cut=0,wavelet='db4',preserve_gamma=True):
 	''' Smooth ts using the wavelet specified.
 
 		@long_cut is the longest wavelength to keep.
@@ -155,7 +156,8 @@ def wavelet_smoother(ts,long_cut=np.inf,short_cut=0,wavelet='db4',normalize=True
 		@normalize will normalize positive and negative
 		contributions after smoothing.
 	'''
-	smooth_long=smooth_short=True
+	smooth_long=True
+	smooth_short=True
 	if long_cut >= len(ts):
 		smooth_long=False
 	if short_cut < 1:
@@ -168,7 +170,7 @@ def wavelet_smoother(ts,long_cut=np.inf,short_cut=0,wavelet='db4',normalize=True
 	# Oversmoothed; Output 0.
 	if long_cut <= short_cut or short_cut >= len(ts):
 		return ts*0
-	if normalize==True:
+	if preserve_gamma==True:
 		avg=np.average(ts)
 		ts-=avg
 	coeffs=pywt.wavedec(ts,wavelet)
@@ -180,8 +182,8 @@ def wavelet_smoother(ts,long_cut=np.inf,short_cut=0,wavelet='db4',normalize=True
 			smooth_short=False
 	if smooth_long == True:
 		li=np.log2((1.0*len(ts))/long_cut)
-	#No information on short wavelength
-
+		if li >= len(coeffs):
+			return ts*0
 	if smooth_long==True:
 		intpart=int(li)
 		fracpart=li-intpart
@@ -196,11 +198,52 @@ def wavelet_smoother(ts,long_cut=np.inf,short_cut=0,wavelet='db4',normalize=True
 			coeffs[i]*=0
 		coeffs[intpart]*=fracpart
 	
-	smoothed=pywt.waverec(coeffs,wavelet)
+	smoothts=pywt.waverec(coeffs,wavelet)
 
 	# Normalization step, ensures the positive and negative
 	# parts of smoothed match those of ts. "Preserves gamma"
-	if normalize==True:
-		smoothed+=avg
+	if preserve_gamma==True:
+		smoothts+=avg
 		ts+=avg
-	return smoothed
+	return np.array(smoothts)
+
+
+def get_scale_limits(scales):
+	output=[]
+	for low in scales:
+		for high in scales:
+			if low < high:
+				output.append((low,high))
+	return output
+
+# Saves the smoothed slts defined through gamma and scales.
+def save_smoothed_slts():
+	gammas=np.arange(0.5,2.0,0.5)
+	
+	#Interesting scales are from 1 hour to 100000 hours (Covers entire dataset)
+#	scales=[1,6,24,24*7,24*7*2,24*7*4,24*7*4*3,24*7*365,100000]
+	scales=np.logspace(0,5,9)
+	scalelimits=get_scale_limits(scales)
+	print(scalelimits)
+	for gamma in gammas:
+		ts=get_mismatch(gamma)
+		dummy,dummytoo,slts=get_policy_2_storage(ts,return_storage_filling_time_series=True)
+		np.save('slts/us_None_None_'+ \
+		str(gamma),slts)
+		for limitvec in scalelimits:
+			smooth=wavelet_smoother(ts,\
+			long_cut=limitvec[1],short_cut=limitvec[0])
+			plot(ts-smooth)
+			try:
+				dummy,dummytoo,slts=get_policy_2_storage(smooth,return_storage_filling_time_series=True)
+			except ValueError:
+				print('Empty storage for '+str(gamma)+' '+str(limitvec[0])+' '+str(limitvec[1]))
+			except TypeError:
+				print('Crossing problem for '+str(gamma)+' '+str(limitvec[0])+' '+str(limitvec[1]))
+			else:
+				np.save('slts/wavelet_'+str(limitvec[0])+\
+				'_'+str(limitvec[1])+'_'+\
+				str(gamma),slts)
+	return 0
+
+

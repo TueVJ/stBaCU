@@ -1,8 +1,4 @@
 from init import *
-import pywt
-import numpy as np
-import copy
-#import mayavi.mlab as maplot
 
 ts=get_mismatch(1.01)
 ss24h=wavelet_smoother(ts,short_cut=24*2)
