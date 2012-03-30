@@ -172,8 +172,8 @@ def wavelet_smoother(ts,long_cut=np.inf,short_cut=0,wavelet='db4',preserve_gamma
 		return ts*0
 	if preserve_gamma==True:
 		avg=np.average(ts)
-		ts-=avg
-	coeffs=pywt.wavedec(ts,wavelet)
+		rawts=ts-avg
+	coeffs=pywt.wavedec(rawts,wavelet)
 	
 	#indices of short and long wavelengths.
 	if smooth_short==True:
@@ -204,7 +204,6 @@ def wavelet_smoother(ts,long_cut=np.inf,short_cut=0,wavelet='db4',preserve_gamma
 	# parts of smoothed match those of ts. "Preserves gamma"
 	if preserve_gamma==True:
 		smoothts+=avg
-		ts+=avg
 	return np.array(smoothts)
 
 
@@ -218,11 +217,13 @@ def get_scale_limits(scales):
 
 # Saves the smoothed slts defined through gamma and scales.
 def save_smoothed_slts():
-	gammas=np.arange(0.5,2.0,0.5)
+	gammas=np.arange(0.5,2.0,0.05)
 	
 	#Interesting scales are from 1 hour to 100000 hours (Covers entire dataset)
 #	scales=[1,6,24,24*7,24*7*2,24*7*4,24*7*4*3,24*7*365,100000]
-	scales=np.logspace(0,5,9)
+#	scales=np.logspace(0.0,5.0,16)
+	scales=[1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072]
+#	scales=[1,2,4,8,4096,8192,16384,32768,65536,131072]
 	scalelimits=get_scale_limits(scales)
 	print(scalelimits)
 	for gamma in gammas:
@@ -233,7 +234,6 @@ def save_smoothed_slts():
 		for limitvec in scalelimits:
 			smooth=wavelet_smoother(ts,\
 			long_cut=limitvec[1],short_cut=limitvec[0])
-			plot(ts-smooth)
 			try:
 				dummy,dummytoo,slts=get_policy_2_storage(smooth,return_storage_filling_time_series=True)
 			except ValueError:

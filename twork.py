@@ -36,7 +36,7 @@ for fname in dirList:
 	count+=1
 	print('Loaded '+ str(round(count/tot*100,2)) + '%')
 
-interesting=random.sample(dict.keys(),20)
+interesting=random.sample(dict.keys(),10)
 #interesting=[]
 #for ID in dict.keys():
 #	if ID.count('us')>0:
