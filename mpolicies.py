@@ -6,14 +6,18 @@ from scipy.integrate import *
 from scipy.stats.mstats import mquantiles
 import constant
 from copy import deepcopy
-from mfunc import *
+from policies import *
+from policy_helpers import *
+from mutils import pos,neg
 
+## Wrapper
+## Policy: Minimimze balancing power on connected components.
+def get_storage_and_new_mismatch(mismatch, offset = 0, fast_eta_in = 1., fast_eta_out = 1., slow_eta_in = .6, slow_eta_out = .6, full_output = True):
+	return get_storage_min_balancing_power(mismatch, offset = offset, fast_eta_in = fast_eta_in, fast_eta_out = fast_eta_out, slow_eta_in = slow_beta_in, slow_eta_out = slow_eta_out, full_output = full_output)
 
+## Wrapper
 def get_policy_1_storage(ts, eta_in, eta_out, storage_capacity = NaN):
-    balancing_fraction = (1. - constant.policy_1_fraction) * ts
-    storage_fraction = constant.policy_1_fraction * ts
-    storage_ts, used_storage = get_policy_2_storage(storage_fraction, constant.policy_1_storage_fraction * eta_in / constant.policy_1_fraction, eta_out, storage_capacity)
-    return storage_ts + balancing_fraction, used_storage
+	return get_storage_balancing_first(ts,constant.policy_1_storage_fraction*eta_in/constant.policy_1_fraction,eta_out,storage_capacity=storage_capacity,storage_fraction=constant.policy_1_fraction)
 
 def get_policy_5_storage(ts, eta_in, eta_out, storage_capacity):
 #    plot(ts, 'k', lw = 2)
@@ -25,111 +29,25 @@ def get_policy_5_storage(ts, eta_in, eta_out, storage_capacity):
 
 #    plot(storage_ts + remainder - ts - 2)
     return storage_ts + remainder, used_storage
+
+## Wrapper
 ###
-#	@param: storage_capacity: Maximum storage capacity in units of average consumption per hour.
+# Policy 2: Dumb storage:
+# If mismatch is positive, throw that much into storage.
+# If mismatch is negative, throw as much as we can 
+# out of storage.
+#	@param: storage_capacity: Maximum storage capacity
+#			in units of average consumption per hour.
 ###
 def get_policy_2_storage(ts, eta_in = 1., eta_out = 1., storage_capacity = NaN,return_storage_filling_time_series=False):
-    """Policy 2"""
-    if ts.min() >= -1e-10 or ts.max() <= 1e-10:
-        return ts, 0
-    indices, integrals = get_indices_and_integrals(ts)
-    storing_potential = eta_in * eta_out * sum(integrals * (integrals > 0))
-    extracting_potential = -sum(integrals * (integrals < 0))
+	return get_storage_max_power(ts=ts,eta_in=eta_in,eta_out=eta_out,storage_capacity=storage_capacity,return_storage_filling_time_series=return_storage_filling_time_series)
 
-    storage_start, used_storage = get_storage_start(integrals, eta_in, eta_out, 
-                                      storage_capacity, 
-                                      storing_potential > extracting_potential)
-    #print storage_start, used_storage
-    
-    storage_usage_ts = get_storage_usage_ts(integrals, storage_start, eta_in, eta_out, storage_capacity, storing_potential > extracting_potential)
-    
-    #print (pos(storage_usage_ts) * eta_in - neg(storage_usage_ts) / eta_in).sum()
-
-    extracting = zeros_like(ts)
-    storing = zeros_like(ts)
-
-	## If start and end have the same sign, we need to ensure distribution
-	## across the cyclic boundaries.
-    end_to_start_slice = concatenate((ts[indices[-1] + 1:],ts[:indices[0] + 1]))
-    if storage_usage_ts[0] < 0:
-        end_to_start_extracting = -burn_off(-end_to_start_slice, -storage_usage_ts[0])
-        extracting[indices[-1] + 1:] = end_to_start_extracting[:len(extracting[indices[-1] + 1:])]
-        extracting[:indices[0] + 1] = end_to_start_extracting[len(extracting[indices[-1] + 1:]):]
-    else:
-        end_to_start_storing = burn_off(pos(end_to_start_slice), pos(storage_usage_ts[0]))
-        storing[indices[-1] + 1:] = end_to_start_storing[:len(extracting[indices[-1] + 1:])]
-        storing[:indices[0] + 1] = end_to_start_storing[len(extracting[indices[-1] + 1:]):]
-    ## Distribute across all other intervals.
-    for x in arange(len(indices)-1) + 1:
-        current_slice = ts[indices[x - 1] + 1: indices[x] + 1]
-        #print x
-        if storage_usage_ts[x] < 0:
-            #print indices[x]
-            extracting[indices[x - 1] + 1: indices[x] + 1] = -burn_off(-current_slice, -storage_usage_ts[x])
-        else:
-            storing[indices[x - 1] + 1: indices[x] + 1] = burn_off(pos(current_slice), pos(storage_usage_ts[x]))
-
-#    figure()
-    #plot(storing, lw = 5)
-#    #plot(extracting, lw = 10)
-    #plot(ts)
-    #plot(ts - storing - extracting+ 1)
-#    figure()
-    storage_filling_with_offset = eta_in * storing.cumsum() + extracting.cumsum() / eta_out
-    storage_filling_without_offset = storage_filling_with_offset - storage_filling_with_offset.min()
-    used_storage = storage_filling_with_offset.max() - storage_filling_with_offset.min()
-    #plot(storage_filling_with_offset)
-    if return_storage_filling_time_series:
-	    return ts - storing - extracting, used_storage, storage_filling_without_offset
-    else:
-        return ts - storing - extracting, used_storage
-		
-
-
+## Wrapper
+## Policy: minimize storage extraction/insertion power
+## on connected components.
 def get_policy_4_storage(ts, eta_in = 1., eta_out = 1., storage_capacity = NaN):
     """Policy 4"""
-    indices, integrals = get_indices_and_integrals(ts)
-    storing_potential = eta_in * eta_out * sum(integrals * (integrals > 0))
-    extracting_potential = -sum(integrals * (integrals < 0))
-
-    storage_start, used_storage = get_storage_start(integrals, eta_in, eta_out, 
-                                      storage_capacity, 
-                                      storing_potential > extracting_potential)
-    #print storage_start, used_storage
-    
-    storage_usage_ts = get_storage_usage_ts(integrals, storage_start, eta_in, eta_out, storage_capacity, storing_potential > extracting_potential)
-    
-    extracting = zeros_like(ts)
-    storing = zeros_like(ts)
-
-    end_to_start_slice = concatenate((ts[indices[-1] + 1:],ts[:indices[0] + 1]))
-    if storage_usage_ts[0] < 0:
-        end_to_start_extracting = -end_to_start_slice - pos(-end_to_start_slice - find_height(-end_to_start_slice, -end_to_start_slice.sum() + storage_usage_ts[0]))
-        extracting[indices[-1] + 1:] = -end_to_start_extracting[:len(extracting[indices[-1] + 1:])]
-        extracting[:indices[0] + 1] = -end_to_start_extracting[len(extracting[indices[-1] + 1:]):]
-    else:
-        end_to_start_storing = pos(end_to_start_slice - pos(end_to_start_slice - find_height(end_to_start_slice, end_to_start_slice.sum() - storage_usage_ts[0])))
-        storing[indices[-1] + 1:] = end_to_start_storing[:len(extracting[indices[-1] + 1:])]
-        storing[:indices[0] + 1] = end_to_start_storing[len(extracting[indices[-1] + 1:]):]
-    
-    for x in arange(len(indices)-1) + 1:
-        current_slice = ts[indices[x - 1] + 1: indices[x] + 1]
-        #print x
-        if storage_usage_ts[x] < 0:
-            #print indices[x]
-            extracting[indices[x - 1] + 1: indices[x] + 1] = current_slice + pos(-current_slice - find_height(-current_slice, -current_slice.sum() + storage_usage_ts[x]))
-        else:
-            storing[indices[x - 1] + 1: indices[x] + 1] = pos(current_slice - pos(current_slice - find_height(current_slice, current_slice.sum() - storage_usage_ts[x])))
-
-#    figure()
-    #plot(storing, lw = 5)
-#    #plot(extracting, lw = 10)
-    #plot(ts)
-    #plot(ts - storing - extracting+ 1)
-#    figure()
-    storage_filling_with_offset = eta_in * storing.cumsum() + extracting.cumsum() / eta_out
-    used_storage = storage_filling_with_offset.max() - storage_filling_with_offset.min()
-    return ts - storing - extracting, used_storage
+    return get_storage_min_storage_power(ts=ts,eta_in=eta_in,eta_out=eta_out,storage_capacity = storage_capacity)
 
 
 def get_policy_7_storage(ts, eta_in, eta_out, storage_capacity):
