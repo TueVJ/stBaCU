@@ -1,8 +1,7 @@
 import numpy
-from mfunc import *
+from mismatch import *
 from mpolicies import *
-import pywt
-import pp
+from wavelet_smoother import wavelet_smoother
 ###
 #	Returns a list of tuples (begin,end) with the beginning
 #	and end indices of intervals of length > 1 where the
@@ -78,135 +77,6 @@ def get_maximal_storages_with_extra_storage(gamma=0.7,storage_size=6,tolerance=1
 	maxes,ind_max=get_max_of_nonzero(storage_level,return_indices=True,mintolerance=tolerance)
 	return maxes
 
-##
-#	Estimates the Extreme Value Theory index of the
-#	timeseries X using the Pickands estimator.
-##
-def gamma_estimator_Pickands(X,return_k=False,excluder=0):
-	X.sort() #Sorts list by smallest first
-	X=X[:len(X)-excluder]
-	N=len(X)/4
-	if N<2+excluder: #Need at least two k values to produce proper output.
-		print "Insufficient values in Pickands estimator"
-		if return_k:
-			return [0,0],[1,2] 
-		else:
-			return [0,0]
-	ks=range(1+excluder,N)
-	est=[]
-	log2=np.log(2)
-	for k in ks:
-		est.append(np.log((X[-k]-X[-2*k])/(X[-2*k]-X[-4*k]))/log2)
-	if return_k==True:
-		return est,ks
-	else:
-		return est
-
-##
-#	Estimates the Extreme Value Theory index of the
-#	timeseries X using the Hill estimator.
-#	Note that this only works for gamma > 0.
-##
-def gamma_estimator_Hill(X,return_k=False,excluder=0):
-	X.sort() #Sorts list by smallest first
-	X=X[:len(X)-excluder]
-	N=len(X)/2
-	ks=range(1,N)
-	est=[]
-	for k in ks:
-		est.append(sum(log(X[-k:]))/k-log(X[-k]))
-	if return_k==True:
-		return est,ks
-	else:
-		return est
-
-##
-#	Estimates the Extreme Value Theory index of the
-#	timeseries X using the adapted Hill estimator.
-#	This works for any gamma.
-##
-def gamma_estimator_adapted_Hill(X,return_k=False,excluder=0):
-	X.sort()
-	X=X[::-1] #Sorts list by largest first
-	if len(X)<=2+excluder:
-		print "Insufficient values in adapted Hill estimator"
-		if return_k:
-			return [0,0],[1,2] 
-		else:
-			return [0,0]
-	X=X[excluder:]
-	N=len(X)-1
-	Us=np.zeros(N)
-	est=np.zeros(N-1)
-	for i in range(N):
-		Us[i]=X[i+1]*(sum(np.log(X[:i+1]))/(i+1)-log(X[i+1]))
-	for k in range(N-1):
-		est[k]=sum(np.log(Us[:k+1]))/(k+1)-np.log(Us[k+1])
-	if return_k==True:
-		return est,np.arange(N-1)+1
-	else:
-		return est
-
-
-def wavelet_smoother(ts,long_cut=np.inf,short_cut=0,wavelet='db4',preserve_gamma=True):
-	''' Smooth ts using the wavelet specified.
-
-		@long_cut is the longest wavelength to keep.
-		@short_cut is the shortest wavelength to keep.
-		@normalize will normalize positive and negative
-		contributions after smoothing.
-	'''
-	smooth_long=True
-	smooth_short=True
-	if long_cut >= len(ts):
-		smooth_long=False
-	if short_cut < 1:
-		smooth_short=False
-	
-	# No smoothing needed
-	if smooth_long == False and smooth_short == False:
-		return ts
-	
-	# Oversmoothed; Output 0.
-	if long_cut <= short_cut or short_cut >= len(ts):
-		return ts*0
-	if preserve_gamma==True:
-		avg=np.average(ts)
-		rawts=ts-avg
-	coeffs=pywt.wavedec(rawts,wavelet)
-	
-	#indices of short and long wavelengths.
-	if smooth_short==True:
-		si=np.log2((1.0*len(ts))/short_cut)
-		if si >= len(coeffs):
-			smooth_short=False
-	if smooth_long == True:
-		li=np.log2((1.0*len(ts))/long_cut)
-		if li >= len(coeffs):
-			return ts*0
-	if smooth_long==True:
-		intpart=int(li)
-		fracpart=li-intpart
-		for i in range(intpart):
-			coeffs[i]*=0
-		coeffs[intpart]*=fracpart
-
-	if smooth_short==True:
-		intpart=int(si)
-		fracpart=si-intpart
-		for i in range(intpart+1,len(coeffs)):
-			coeffs[i]*=0
-		coeffs[intpart]*=fracpart
-	
-	smoothts=pywt.waverec(coeffs,wavelet)
-
-	# Normalization step, ensures the positive and negative
-	# parts of smoothed match those of ts. "Preserves gamma"
-	if preserve_gamma==True:
-		smoothts+=avg
-	return np.array(smoothts)
-
-
 def get_scale_limits(scales):
 	output=[]
 	for low in scales:
@@ -217,20 +87,18 @@ def get_scale_limits(scales):
 
 # Saves the smoothed slts defined through gamma and scales.
 def save_smoothed_slts():
-	gammas=np.arange(0.5,2.0,0.05)
+	gammas=np.arange(0.5,2.0,0.005)
 	
 	#Interesting scales are from 1 hour to 100000 hours (Covers entire dataset)
-#	scales=[1,6,24,24*7,24*7*2,24*7*4,24*7*4*3,24*7*365,100000]
 #	scales=np.logspace(0.0,5.0,16)
-	scales=[1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536,131072]
-#	scales=[1,2,4,8,4096,8192,16384,32768,65536,131072]
-	scalelimits=get_scale_limits(scales)
-	print(scalelimits)
+#	scalelimits=get_scale_limits(scales)
+#	print(scalelimits)
 	for gamma in gammas:
 		ts=get_mismatch(gamma)
 		dummy,dummytoo,slts=get_policy_2_storage(ts,return_storage_filling_time_series=True)
 		np.save('slts/us_None_None_'+ \
 		str(gamma),slts)
+		'''
 		for limitvec in scalelimits:
 			smooth=wavelet_smoother(ts,\
 			long_cut=limitvec[1],short_cut=limitvec[0])
@@ -244,6 +112,7 @@ def save_smoothed_slts():
 				np.save('slts/wavelet_'+str(limitvec[0])+\
 				'_'+str(limitvec[1])+'_'+\
 				str(gamma),slts)
+		'''
 	return 0
 
 
