@@ -1,14 +1,18 @@
 Attempting to clean up Morten's code dealing with storage simulations.
 
-Initialize init.py in order to get Morten's functions available:
-
 Project files:
-init.py : Master init file.
-mplot.py : Contains all plotting functions. (Morten)
-mfunc.py : Helper functions. (Morten)
-mpolicies.py : Functions for finding storage timeseries and levels. (Morten)
-tfunc.py : Helper functions (Used with tplot.py). (Tue)
-tplot.py : Plotting functions. (Tue)
-countries.py : Initializes contries and contains data on which country to use for timeseries.
+policies.py: Main functions for creating storage time series from mismatch time series.
+policy_helpers.py: Helper functions for the above.
+utils.py: Ditto.
 
-NOTE: European countries are currently commented out and only E_detrended is loaded to allow for faster loading. To re-enable individual countries, remove the multi-line comment """...""" from countries.py
+mpolicies.py: Old entries for policies. Load this if you a using legacy code.
+
+mplot.py, mfunc.py,constant.py : Old plotting code kept around for posterity's sake.
+tplot.py, tfunc.py: New plots.
+
+wavelet_smoother.py: Wavelet smoother util. Implements pywt.
+EVT_estimators.py: What it says. used for estimating estreme values of uncorrelated data.
+
+countries.py: paths for time series and code to handle loading multiple countries.
+
+NOTE: European countries are currently commented out and only EU_detrended is loaded to allow for faster loading. To re-enable individual countries, remove the multi-line comment """...""" from countries.py
